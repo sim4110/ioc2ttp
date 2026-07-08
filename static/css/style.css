@@ -1,0 +1,56 @@
+/* Bootstrap이 레이아웃/색상 대부분을 담당한다.
+   여기서는 Bootstrap에 없는 것(모노스페이스 해시, Tactic×Technique 히트맵)만 보정한다. */
+
+.mono {
+    font-family: "Consolas", "SFMono-Regular", monospace;
+}
+
+.heatmap-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 10px;
+}
+
+.heatmap-tactic {
+    width: 160px;
+    flex-shrink: 0;
+}
+
+.heatmap-cells {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.heatmap-cell {
+    width: 64px;
+    padding: 6px 0;
+    text-align: center;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #0f1420;
+}
+
+.chain-scroll {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.chain-col {
+    flex: 0 0 220px;
+    min-width: 220px;
+}
+
+.chain-col-header {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color);
+    border-bottom: 2px solid var(--bs-border-color);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+}
