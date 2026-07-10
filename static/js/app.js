@@ -82,7 +82,10 @@ createApp({
         },
         formatDate(value) {
             if (!value) return "-";
-            return String(value).slice(0, 10);
+            // Flask jsonify는 datetime을 RFC 1123 형식("Mon, 30 Mar 2020 ...")으로 내려주므로
+            // 단순 문자열 슬라이스로는 잘린다. Date로 파싱해 YYYY-MM-DD로 통일한다.
+            const parsed = new Date(value);
+            return isNaN(parsed.getTime()) ? String(value).slice(0, 10) : parsed.toISOString().slice(0, 10);
         },
         metaFields(sample) {
             const {
