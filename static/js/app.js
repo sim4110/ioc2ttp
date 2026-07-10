@@ -19,6 +19,9 @@ createApp({
             groups: [],
             selectedGroupTag: "",
             groupChain: {},
+            llmAnalysis: null,
+            llmLoading: false,
+            llmError: "",
             _charts: {},
             _searchTimer: null,
         };
@@ -64,6 +67,12 @@ createApp({
             const res = await fetch(url);
             if (!res.ok) throw new Error(`${url} -> ${res.status}`);
             return res.json();
+        },
+        async postJSON(url) {
+            const res = await fetch(url, { method: "POST" });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(body.error || `${url} -> ${res.status}`);
+            return body;
         },
         formatDate(value) {
             if (!value) return "-";
@@ -203,9 +212,45 @@ createApp({
         async loadSample(hash) {
             try {
                 this.selectedSample = await this.fetchJSON(`/api/sample/${hash}`);
+                this.llmAnalysis = null;
+                this.llmError = "";
             } catch (e) {
                 console.error(e);
             }
+        },
+        async runLlmAnalysis() {
+            if (!this.selectedSample.sha256_hash || this.llmLoading) return;
+            this.llmLoading = true;
+            this.llmError = "";
+            try {
+                const result = await this.postJSON(`/api/sample/${this.selectedSample.sha256_hash}/analyze`);
+                // 체크리스트 항목에 화면 전용 체크 상태를 붙인다 (API 응답 스키마에는 없는 필드).
+                (result.reversing_checklist || []).forEach((item) => { item.done = false; });
+                this.llmAnalysis = result;
+            } catch (e) {
+                this.llmError = e.message;
+            } finally {
+                this.llmLoading = false;
+            }
+        },
+        severityBadgeClass(severity) {
+            return {
+                low: "text-bg-secondary",
+                medium: "text-bg-warning",
+                high: "text-bg-danger-subtle border border-danger-subtle",
+                critical: "text-bg-danger",
+            }[severity] || "text-bg-secondary";
+        },
+        areaLabel(area) {
+            return {
+                PE_HEADER: "PE 헤더",
+                IMPORT_TABLE: "Import Table",
+                EXPORT_TABLE: "Export Table",
+                STRINGS: "문자열",
+                RESOURCES: "리소스",
+                ANTI_ANALYSIS: "안티분석/패킹",
+                NETWORK: "네트워크",
+            }[area] || area;
         },
     },
 }).mount("#app");

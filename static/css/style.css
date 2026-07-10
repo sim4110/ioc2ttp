@@ -54,3 +54,58 @@
     padding-bottom: 6px;
     margin-bottom: 8px;
 }
+
+/* AI 분석 결과 카드 — 줄글 나열 대신 심각도별 강조 배너 + 표/체크리스트로 스캔하기 쉽게 구성 */
+.llm-report {
+    border-left: 4px solid var(--bs-secondary);
+    background: var(--bs-tertiary-bg);
+    border-radius: 6px;
+    padding: 14px 16px;
+}
+.llm-report.severity-low { border-left-color: #6c757d; }
+.llm-report.severity-medium { border-left-color: #ffc107; }
+.llm-report.severity-high { border-left-color: #fd7e14; }
+.llm-report.severity-critical { border-left-color: #dc3545; }
+
+.llm-report-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.llm-severity-badge {
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.llm-technique-card {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+}
+
+.llm-checklist {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+}
+.llm-checklist li {
+    position: relative;
+    padding-left: 1.1em;
+    margin-bottom: 6px;
+}
+.llm-checklist li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.5em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+.llm-checklist-neutral li::before { background: var(--bs-secondary-color); }
+.llm-checklist-action li::before { background: var(--bs-primary); }
+.llm-checklist-warn li::before { background: #ffc107; }

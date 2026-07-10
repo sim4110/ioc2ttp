@@ -151,6 +151,89 @@
                         </li>
                     </ul>
                     <p v-else class="text-body-secondary small">관련 링크 없음</p>
+
+                    <h4 class="h6 text-body-secondary text-uppercase mt-4">AI 분석 (악성코드 분석가 관점)</h4>
+                    <button type="button" class="btn btn-sm btn-outline-primary mb-3" @click="runLlmAnalysis" :disabled="llmLoading">
+                        {{ llmLoading ? '분석 중...' : (llmAnalysis ? '다시 분석' : 'AI 분석 실행') }}
+                    </button>
+                    <div v-if="llmError" class="alert alert-danger small py-2">{{ llmError }}</div>
+                    <div v-if="llmAnalysis" class="llm-report" :class="'severity-' + llmAnalysis.severity">
+                        <div class="llm-report-banner">
+                            <span class="badge llm-severity-badge" :class="severityBadgeClass(llmAnalysis.severity)">{{ llmAnalysis.severity }}</span>
+                            <div>
+                                <p class="mb-1 fw-semibold">{{ llmAnalysis.threat_summary }}</p>
+                                <p class="mb-0 text-body-secondary small">{{ llmAnalysis.severity_reasoning }}</p>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-1">
+                            <div class="col-12 col-lg-6">
+                                <h5 class="h6 text-body-secondary text-uppercase">핵심 지표</h5>
+                                <div class="table-responsive" v-if="llmAnalysis.key_indicators.length">
+                                    <table class="table table-sm table-hover align-middle mb-0">
+                                        <thead>
+                                            <tr><th>유형</th><th>값</th><th>왜 봐야 하는가</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="ind in llmAnalysis.key_indicators">
+                                                <td><span class="badge text-bg-secondary">{{ ind.type }}</span></td>
+                                                <td class="mono small text-break">{{ ind.value }}</td>
+                                                <td class="small text-body-secondary">{{ ind.note }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p v-else class="text-body-secondary small">없음</p>
+                            </div>
+                            <div class="col-12 col-lg-6">
+                                <h5 class="h6 text-body-secondary text-uppercase">검증 우선순위 Technique</h5>
+                                <div class="llm-technique-card" v-for="(t, i) in llmAnalysis.priority_techniques" :key="t.technique_id">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <span><span class="mono fw-semibold">{{ t.technique_id }}</span> {{ t.technique_name }}</span>
+                                        <span class="badge text-bg-secondary flex-shrink-0">#{{ i + 1 }}</span>
+                                    </div>
+                                    <p class="text-body-secondary small mb-0 mt-1">{{ t.why_priority }}</p>
+                                </div>
+                                <p v-if="!llmAnalysis.priority_techniques.length" class="text-body-secondary small">없음</p>
+                            </div>
+                            <div class="col-12 col-lg-4">
+                                <h5 class="h6 text-body-secondary text-uppercase">주요 행위</h5>
+                                <ul class="llm-checklist llm-checklist-neutral small">
+                                    <li v-for="b in llmAnalysis.behavior_highlights">{{ b }}</li>
+                                    <li v-if="!llmAnalysis.behavior_highlights.length" class="text-body-secondary">없음</li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-lg-4">
+                                <h5 class="h6 text-body-secondary text-uppercase">권장 조치</h5>
+                                <ul class="llm-checklist llm-checklist-action small">
+                                    <li v-for="a in llmAnalysis.recommended_actions">{{ a }}</li>
+                                    <li v-if="!llmAnalysis.recommended_actions.length" class="text-body-secondary">없음</li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-lg-4">
+                                <h5 class="h6 text-body-secondary text-uppercase">데이터 공백 / 주의사항</h5>
+                                <ul class="llm-checklist llm-checklist-warn small">
+                                    <li v-for="g in llmAnalysis.data_gaps">{{ g }}</li>
+                                    <li v-if="!llmAnalysis.data_gaps.length" class="text-body-secondary">없음</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mt-4" v-if="llmAnalysis.reversing_checklist && llmAnalysis.reversing_checklist.length">
+                            <h5 class="h6 text-body-secondary text-uppercase">리버싱 체크리스트</h5>
+                            <p class="text-body-secondary small">IDA/Ghidra 등으로 직접 열어볼 때 무엇부터 확인할지 제안입니다. 실제 import/export 함수 목록은 이 도구가 알 수 없으니, 각 항목은 확인해볼 대상이지 확정된 사실이 아닙니다.</p>
+                            <div class="list-group">
+                                <label class="list-group-item d-flex gap-3 align-items-start" v-for="(item, i) in llmAnalysis.reversing_checklist" :key="i">
+                                    <input class="form-check-input mt-1 flex-shrink-0" type="checkbox" v-model="item.done">
+                                    <span class="flex-grow-1" :class="{ 'text-decoration-line-through text-body-secondary': item.done }">
+                                        <span class="badge text-bg-secondary me-1">{{ areaLabel(item.area) }}</span>
+                                        {{ item.focus }}
+                                        <span class="text-body-secondary small d-block mt-1">{{ item.why_relevant }}</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>

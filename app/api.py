@@ -1,7 +1,7 @@
 """Flask REST API 엔드포인트 (project.pdf 5-2 서비스 페이지 구성과 매핑)."""
 from flask import Blueprint, jsonify, request
 
-from app import model
+from app import llm_service, model
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -46,6 +46,17 @@ def sample_detail(sha256_hash):
     if not result:
         return jsonify({"error": "sample not found"}), 404
     return jsonify(result)
+
+
+@api_bp.route("/sample/<sha256_hash>/analyze", methods=["POST"])
+def sample_analyze(sha256_hash):
+    sample = model.get_sample_detail(sha256_hash)
+    if not sample:
+        return jsonify({"error": "sample not found"}), 404
+    try:
+        return jsonify(llm_service.analyze_sample(sample))
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": str(exc)}), 502
 
 
 @api_bp.route("/sample/search")
