@@ -15,6 +15,9 @@ createApp({
             attackMatrix: [],
             searchQuery: "",
             searchResults: [],
+            searchTotal: 0,
+            searchPage: 1,
+            searchPerPage: 10,
             selectedSample: { sha256_hash: "", yara_matches: [], attack_mapping: [] },
             groups: [],
             selectedGroupTag: "",
@@ -34,6 +37,9 @@ createApp({
                 groups[row.tactic].push(row);
             }
             return Object.entries(groups).map(([tactic, items]) => ({ tactic, items }));
+        },
+        searchTotalPages() {
+            return Math.max(1, Math.ceil(this.searchTotal / this.searchPerPage));
         },
     },
     watch: {
@@ -178,7 +184,7 @@ createApp({
                 this.renderChart("chart-techniques", {
                     type: "bar",
                     data: {
-                        labels: techniques.map((r) => `${r.technique_id}`),
+                        labels: techniques.map((r) => [r.technique_id, `(${r.technique_name})`]),
                         datasets: [{ label: "연관 signature 수", data: techniques.map((r) => r.signature_count), backgroundColor: CHART_COLORS[3] }],
                     },
                     options: { ...baseOptions(), indexAxis: "y" },
@@ -197,17 +203,26 @@ createApp({
         },
         onSearch() {
             clearTimeout(this._searchTimer);
-            this._searchTimer = setTimeout(async () => {
-                if (!this.searchQuery.trim()) {
-                    this.searchResults = [];
-                    return;
-                }
-                try {
-                    this.searchResults = await this.fetchJSON(`/api/sample/search?q=${encodeURIComponent(this.searchQuery)}`);
-                } catch (e) {
-                    console.error(e);
-                }
-            }, 300);
+            this._searchTimer = setTimeout(() => this.runSearch(1), 300);
+        },
+        async runSearch(page) {
+            clearTimeout(this._searchTimer);
+            if (!this.searchQuery.trim()) {
+                this.searchResults = [];
+                this.searchTotal = 0;
+                this.searchPage = 1;
+                return;
+            }
+            try {
+                const data = await this.fetchJSON(
+                    `/api/sample/search?q=${encodeURIComponent(this.searchQuery)}&page=${page}&per_page=${this.searchPerPage}`
+                );
+                this.searchResults = data.results;
+                this.searchTotal = data.total;
+                this.searchPage = page;
+            } catch (e) {
+                console.error(e);
+            }
         },
         async loadSample(hash) {
             try {

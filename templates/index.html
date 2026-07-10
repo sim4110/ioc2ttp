@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>정적 IoC 기반 시각화 대시보드</title>
+<title>IoC2TTP</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
@@ -13,7 +13,9 @@
 {% raw %}
 <div id="app">
     <nav class="navbar navbar-expand navbar-dark bg-body-tertiary border-bottom px-3 px-md-4">
-        <span class="navbar-brand mb-0 fs-6 fw-semibold">정적 IoC 기반 시각화 대시보드 &amp; 공격체인 분석</span>
+        <a href="/" class="navbar-brand mb-0 d-flex align-items-center">
+            <span class="brand-wordmark"><span class="brand-ioc">IoC</span><span class="brand-arrow">2</span><span class="brand-ttp">TTP</span></span>
+        </a>
         <ul class="nav nav-pills ms-auto">
             <li class="nav-item">
                 <button class="nav-link" :class="{active: tab==='main'}" @click="tab='main'">메인 대시보드</button>
@@ -77,8 +79,11 @@
             <div class="card shadow-sm mb-3">
                 <div class="card-body">
                     <h2 class="card-title h6 text-body-secondary text-uppercase">샘플 검색 (SHA256 / 패밀리명 / 파일명)</h2>
-                    <input class="form-control" v-model="searchQuery" @input="onSearch" placeholder="예: agenttesla, a1b2c3..." />
-                    <div class="list-group mt-3" v-if="searchResults.length">
+                    <input class="form-control" v-model="searchQuery" @input="onSearch" @keyup.enter="runSearch(1)" placeholder="예: agenttesla, a1b2c3... (Enter로 바로 검색)" />
+                    <div class="d-flex justify-content-between align-items-center mt-3 mb-2" v-if="searchResults.length">
+                        <span class="text-body-secondary small">총 {{ searchTotal }}건 중 {{ (searchPage - 1) * searchPerPage + 1 }}–{{ (searchPage - 1) * searchPerPage + searchResults.length }}건</span>
+                    </div>
+                    <div class="list-group" v-if="searchResults.length">
                         <button type="button" class="list-group-item list-group-item-action d-flex gap-3 align-items-center"
                                 v-for="r in searchResults" :key="r.sha256_hash" @click="loadSample(r.sha256_hash)">
                             <span class="mono small">{{ r.sha256_hash.slice(0,16) }}...</span>
@@ -86,6 +91,12 @@
                             <span class="text-body-secondary small">{{ r.file_name }}</span>
                         </button>
                     </div>
+                    <nav class="d-flex justify-content-between align-items-center mt-3" v-if="searchResults.length && searchTotalPages > 1">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="searchPage <= 1" @click="runSearch(searchPage - 1)">이전</button>
+                        <span class="text-body-secondary small">{{ searchPage }} / {{ searchTotalPages }} 페이지</span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="searchPage >= searchTotalPages" @click="runSearch(searchPage + 1)">다음</button>
+                    </nav>
+                    <p class="text-body-secondary small mt-3 mb-0" v-if="searchQuery.trim() && !searchResults.length">검색 결과가 없습니다.</p>
                 </div>
             </div>
 
@@ -124,24 +135,36 @@
                     </div>
                     <p v-else class="text-body-secondary small">행위 기반 정보 없음</p>
 
-                    <h4 class="h6 text-body-secondary text-uppercase mt-4">YARA 매칭 근거</h4>
-                    <div class="d-flex flex-wrap gap-2 mb-3">
-                        <span class="badge text-bg-primary-subtle border border-primary-subtle" v-for="y in selectedSample.yara_matches" :key="y.rule_name">{{ y.rule_name }}</span>
-                        <span v-if="!selectedSample.yara_matches.length" class="text-body-secondary small">매칭된 YARA 룰 없음</span>
+                    <h4 class="h6 text-body-secondary text-uppercase mt-4 mb-2 d-flex align-items-center collapse-toggle" role="button"
+                        data-bs-toggle="collapse" data-bs-target="#yaraMatchesCollapse" aria-expanded="true" aria-controls="yaraMatchesCollapse">
+                        YARA 매칭 근거
+                        <span class="collapse-chevron ms-auto">▾</span>
+                    </h4>
+                    <div id="yaraMatchesCollapse" class="collapse show">
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <span class="badge text-bg-primary-subtle border border-primary-subtle" v-for="y in selectedSample.yara_matches" :key="y.rule_name">{{ y.rule_name }}</span>
+                            <span v-if="!selectedSample.yara_matches.length" class="text-body-secondary small">매칭된 YARA 룰 없음</span>
+                        </div>
                     </div>
 
-                    <h4 class="h6 text-body-secondary text-uppercase mt-4">ATT&amp;CK 매핑</h4>
-                    <table class="table table-sm table-hover align-middle" v-if="selectedSample.attack_mapping.length">
-                        <thead><tr><th>Software</th><th>Technique</th><th>Tactic</th></tr></thead>
-                        <tbody>
-                            <tr v-for="m in selectedSample.attack_mapping">
-                                <td>{{ m.software_name }}</td>
-                                <td>{{ m.technique_id }} - {{ m.technique_name }}</td>
-                                <td>{{ m.tactic }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <p v-else class="text-body-secondary small">매칭된 ATT&amp;CK Technique 없음</p>
+                    <h4 class="h6 text-body-secondary text-uppercase mt-4 mb-2 d-flex align-items-center collapse-toggle" role="button"
+                        data-bs-toggle="collapse" data-bs-target="#attackMappingCollapse" aria-expanded="true" aria-controls="attackMappingCollapse">
+                        ATT&amp;CK 매핑
+                        <span class="collapse-chevron ms-auto">▾</span>
+                    </h4>
+                    <div id="attackMappingCollapse" class="collapse show">
+                        <table class="table table-sm table-hover align-middle" v-if="selectedSample.attack_mapping.length">
+                            <thead><tr><th>Software</th><th>Technique</th><th>Tactic</th></tr></thead>
+                            <tbody>
+                                <tr v-for="m in selectedSample.attack_mapping">
+                                    <td>{{ m.software_name }}</td>
+                                    <td>{{ m.technique_id }} - {{ m.technique_name }}</td>
+                                    <td>{{ m.tactic }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p v-else class="text-body-secondary small">매칭된 ATT&amp;CK Technique 없음</p>
+                    </div>
 
                     <h4 class="h6 text-body-secondary text-uppercase mt-4">관련 링크</h4>
                     <ul class="list-group" v-if="selectedSample.references && selectedSample.references.length">

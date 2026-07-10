@@ -323,12 +323,19 @@ def get_driver_category_distribution() -> list:
     """)
 
 
-def search_samples(query: str, limit: int = 20) -> list:
+def search_samples(query: str, limit: int = 10, offset: int = 0) -> dict:
+    """검색 결과를 페이지 단위로 반환한다. total을 함께 내려줘야 프론트에서
+    '전체 중 몇 건'인지, 페이지가 몇 개인지 계산할 수 있다."""
     like = f"%{query.lower()}%"
-    return _query("""
+    total = _query("""
+        SELECT COUNT(*) AS count FROM samples
+        WHERE LOWER(sha256_hash) LIKE %s OR LOWER(signature) LIKE %s OR LOWER(file_name) LIKE %s
+    """, (like, like, like))[0]["count"]
+    results = _query("""
         SELECT sha256_hash, file_name, signature, first_seen
         FROM samples
         WHERE LOWER(sha256_hash) LIKE %s OR LOWER(signature) LIKE %s OR LOWER(file_name) LIKE %s
         ORDER BY first_seen DESC
-        LIMIT %s
-    """, (like, like, like, limit))
+        LIMIT %s OFFSET %s
+    """, (like, like, like, limit, offset))
+    return {"total": total, "results": results}

@@ -62,9 +62,11 @@ def sample_analyze(sha256_hash):
 @api_bp.route("/sample/search")
 def sample_search():
     q = request.args.get("q", default="", type=str)
+    page = max(1, request.args.get("page", default=1, type=int))
+    per_page = request.args.get("per_page", default=10, type=int)
     if not q:
-        return jsonify([])
-    return _handle(model.search_samples, q)
+        return jsonify({"total": 0, "results": []})
+    return _handle(model.search_samples, q, per_page, (page - 1) * per_page)
 
 
 @api_bp.route("/attack/mapping-rate")
