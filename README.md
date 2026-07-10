@@ -156,27 +156,38 @@ PIPELINE_SCHEDULE_MINUTE=0
 다시 시도합니다. 다만 스케줄이 Flask 프로세스 생존에 종속되므로, 실행 중이던 프로세스가
 재시작되는 시점이 마침 03:00 언저리와 겹치면 그날 실행이 밀리거나 건너뛸 수 있습니다(6장 참고).
 
-### 3-2. OCI VM 배포 환경
+### 3-2. OCI VM 배포 환경 (`run.sh`)
 
-로컬과 동일한 코드를 OCI Compute VM에 SSH로 접속해 그대로 실행합니다.
+OCI Compute VM(Oracle Linux 8)에 SSH로 접속해 `run.sh`로 배포/실행합니다. OS 패키지·Docker 설치부터
+venv 생성, 파이프라인 실행, Flask 기동까지 단계별로 감싸둔 스크립트라 사람이 명령어를 하나씩 조합할
+필요가 없습니다.
 
 ```bash
 git clone <repo-url> && cd project
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-docker compose up -d               # PostgreSQL 컨테이너 기동
-python run_pipeline.py all         # 최초 1회 수동 실행 (수집 → 전처리 → 적재)
-FLASK_PORT=3000 python -m app.app  # 3000번 포트로 기동
+chmod +x run.sh
+
+./run.sh bootstrap   # (최초 1회, sudo) OS 패키지·Docker·firewalld(TCP 3000) 설정
+
+# .env 파일 작성 (MalwareBazaar API 키, DB 접속 정보 등 — docker-compose.yml 기본값과 맞춤)
+
+./run.sh fresh       # setup(venv+pip+PostgreSQL) → pipeline(collect→preprocess→load) → serve(Flask 기동)
 ```
 
+- `run.sh`가 감싸는 명령: `bootstrap`(OS/Docker/firewalld, 최초 1회) · `setup`(venv+pip+PostgreSQL
+  컨테이너) · `collect`/`preprocess`/`load`/`pipeline`(파이프라인 단계별/전체 실행) · `serve`(Flask
+  기동) · `all`(=`setup → serve`, 인자 없이 `./run.sh`만 실행해도 동일) · `fresh`(=`setup → pipeline →
+  serve`). 옵션 전체는 `./run.sh --help` 참고.
+- 이미 데이터가 적재된 VM에서 웹서비스만 다시 띄우려면 `./run.sh` 또는 `./run.sh serve`만 실행하면
+  됩니다.
+- Flask 포트는 `FLASK_PORT` 환경변수로 바꿀 수 있습니다 (기본 3000): `FLASK_PORT=3000 ./run.sh serve`.
 - 웹서비스 접속: `http://<PUBLIC_IP>:3000` (실제 IP는 제출 시 채워 넣습니다)
-- OCI VCN Security List/NSG에서 `TCP 3000` Ingress를 허용하고, VM 내부 `ufw`/`iptables`에서도
-  같은 포트를 열어야 외부에서 접속됩니다 (2-2절 참고).
+- `./run.sh bootstrap`이 VM 내부 firewalld에서 `TCP 3000`을 열어주지만, OCI VCN Security List/NSG의
+  Ingress 허용은 OCI 콘솔에서 별도로 설정해야 외부에서 접속됩니다 (2-2절 참고).
 - 최초 실행 이후의 재수집은 `app/scheduler.py`가 Flask 프로세스 안에서 자동으로 처리합니다
-  (아래 "파이프라인 자동 실행" 참고). 별도 cron 등록 없이 웹서비스만 계속 띄워두면 됩니다.
-- 프로세스를 SSH 세션 종료 후에도 유지하려면 `tmux`/`screen`/`systemd` 등 원하는 방식으로
-  백그라운드 실행하면 됩니다 (이 저장소는 앱 실행 커맨드 자체만 정의하며 특정 프로세스
-  매니저를 강제하지 않습니다).
+  (아래 "파이프라인 자동 실행" 참고). 수동으로 한 번 더 갱신하고 싶으면 `./run.sh pipeline`만
+  실행하면 됩니다.
+- 프로세스를 SSH 세션 종료 후에도 유지하려면 `nohup ./run.sh serve > server.log 2>&1 &`처럼
+  백그라운드로 실행합니다 (`./run.sh serve` 실행 시 안내 메시지에도 동일하게 표시됩니다).
 
 ## 4. 데이터 흐름 상세 설명
 
