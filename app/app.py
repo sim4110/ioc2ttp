@@ -36,7 +36,11 @@ def create_app() -> Flask:
     app.register_blueprint(api_bp)
 
     @app.route("/")
-    def index():
+    def landing():
+        return render_template("landing.html")
+
+    @app.route("/dashboard")
+    def dashboard():
         return render_template("index.html")
 
     _maybe_start_scheduler()

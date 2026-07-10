@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IoC2TTP — 정적 IoC 기반 공격체인 분석</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<nav class="navbar navbar-expand navbar-dark bg-body-tertiary border-bottom px-3 px-md-4">
+    <a href="/" class="navbar-brand mb-0 d-flex align-items-center">
+        <span class="brand-wordmark"><span class="brand-ioc">IoC</span><span class="brand-arrow">2</span><span class="brand-ttp">TTP</span></span>
+    </a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-primary ms-auto">대시보드 바로가기</a>
+</nav>
+
+<header class="landing-hero text-center px-3">
+    <div class="container py-5">
+        <span class="badge text-bg-secondary mb-4">정적 IoC 기반 CTI 프로토타입</span>
+        <h1 class="fw-bold mb-4">
+            <span class="brand-wordmark landing-hero-wordmark"><span class="brand-ioc">IoC</span><span class="brand-arrow">2</span><span class="brand-ttp">TTP</span></span>
+        </h1>
+        <div class="d-flex flex-wrap justify-content-center gap-3 mt-3">
+            <a class="btn btn-primary landing-hero-btn" href="{{ url_for('dashboard') }}">대시보드 바로가기</a>
+            <a class="btn btn-outline-secondary landing-hero-btn" href="{{ url_for('dashboard') }}?tab=sample">샘플 검색하기</a>
+        </div>
+    </div>
+</header>
+
+<main class="container px-3 px-md-4 pb-5">
+    <section class="row g-3 mb-5">
+        <div class="col-6 col-md-3">
+            <div class="card h-100 text-center shadow-sm"><div class="card-body">
+                <div class="display-6 fw-bold" data-stat="sample_count">-</div>
+                <div class="text-body-secondary small text-uppercase">총 수집 샘플</div>
+            </div></div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card h-100 text-center shadow-sm"><div class="card-body">
+                <div class="display-6 fw-bold" data-stat="driver_count">-</div>
+                <div class="text-body-secondary small text-uppercase">취약/악성 드라이버</div>
+            </div></div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card h-100 text-center shadow-sm"><div class="card-body">
+                <div class="display-6 fw-bold" data-stat="matched_signatures">-</div>
+                <div class="text-body-secondary small text-uppercase">ATT&amp;CK 매칭 signature</div>
+            </div></div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card h-100 text-center shadow-sm"><div class="card-body">
+                <div class="fs-5 fw-bold" data-stat="period">-</div>
+                <div class="text-body-secondary small text-uppercase">수집 기간</div>
+            </div></div>
+        </div>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h5 text-body-secondary text-uppercase mb-3">무엇을 볼 수 있나요</h2>
+        <div class="row g-3">
+            <div class="col-12 col-md-4">
+                <a class="text-decoration-none" href="{{ url_for('dashboard') }}?tab=main">
+                    <div class="card h-100 shadow-sm landing-feature-card"><div class="card-body">
+                        <h3 class="h6 fw-semibold text-body">메인 대시보드</h3>
+                        <p class="text-body-secondary small mb-0">Top N 악성코드 패밀리·YARA 룰, 탐지 시계열, 파일 유형/드라이버 카테고리 분포를 한눈에 확인합니다.</p>
+                    </div></div>
+                </a>
+            </div>
+            <div class="col-12 col-md-4">
+                <a class="text-decoration-none" href="{{ url_for('dashboard') }}?tab=sample">
+                    <div class="card h-100 shadow-sm landing-feature-card"><div class="card-body">
+                        <h3 class="h6 fw-semibold text-body">샘플 상세 조회 &amp; AI 분석</h3>
+                        <p class="text-body-secondary small mb-0">해시·패밀리명으로 샘플을 검색하고, 고정된 판정 룰을 따르는 AI 분석가가 우선순위를 짚어줍니다.</p>
+                    </div></div>
+                </a>
+            </div>
+            <div class="col-12 col-md-4">
+                <a class="text-decoration-none" href="{{ url_for('dashboard') }}?tab=attack">
+                    <div class="card h-100 shadow-sm landing-feature-card"><div class="card-body">
+                        <h3 class="h6 fw-semibold text-body">ATT&amp;CK 매핑 &amp; Attack Chain</h3>
+                        <p class="text-body-secondary small mb-0">Tactic × Technique 히트맵과 APT 그룹별 kill chain을, 실제 수집 데이터로 검증된 부분과 대조해 보여줍니다.</p>
+                    </div></div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="mb-4">
+        <h2 class="h5 text-body-secondary text-uppercase mb-3">데이터 출처</h2>
+        <div class="d-flex flex-wrap gap-2">
+            <span class="badge text-bg-secondary">MalwareBazaar (abuse.ch)</span>
+            <span class="badge text-bg-secondary">LOLDrivers</span>
+            <span class="badge text-bg-secondary">MITRE ATT&amp;CK</span>
+            <span class="badge text-bg-secondary">MISP Galaxy (Malpedia)</span>
+        </div>
+    </section>
+</main>
+
+<footer class="border-top px-3 px-md-4 py-3 text-body-secondary small text-center">
+    IoC2TTP — 정적으로 공개된 IoC 데이터를 수집·정제해 MITRE ATT&amp;CK 기반으로 시각화하는 CTI 프로토타입
+</footer>
+
+<script>
+fetch('/api/meta').then(function (r) { return r.json(); }).then(function (meta) {
+    var fmt = function (v) { return (v === null || v === undefined) ? '-' : v; };
+    var dateFmt = function (v) {
+        if (!v) return '-';
+        var d = new Date(v);
+        return isNaN(d.getTime()) ? String(v).slice(0, 10) : d.toISOString().slice(0, 10);
+    };
+    document.querySelector('[data-stat="sample_count"]').textContent = fmt(meta.sample_count);
+    document.querySelector('[data-stat="driver_count"]').textContent = fmt(meta.driver_count);
+    document.querySelector('[data-stat="matched_signatures"]').textContent = fmt(meta.matched_signatures);
+    document.querySelector('[data-stat="period"]').textContent = dateFmt(meta.earliest_seen) + ' ~ ' + dateFmt(meta.latest_seen);
+}).catch(function () { /* API 미기동 시에도 랜딩 페이지 자체는 정상 노출되어야 하므로 조용히 무시 */ });
+</script>
+</body>
+</html>
