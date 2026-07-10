@@ -5,6 +5,24 @@
     font-family: "Consolas", "SFMono-Regular", monospace;
 }
 
+/* 브랜드 워드마크: "IoC2TTP"의 '2'를 IoC -> TTP 변환(이 서비스가 하는 일)을
+   상징하는 화살표처럼 강조 색으로 분리해 로고처럼 보이게 한다. */
+.brand-wordmark {
+    font-family: "Consolas", "SFMono-Regular", monospace;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+.brand-ioc {
+    color: var(--bs-body-color);
+}
+.brand-arrow {
+    color: #4f8cff;
+    padding: 0 1px;
+}
+.brand-ttp {
+    color: #4f8cff;
+}
+
 .heatmap-row {
     display: flex;
     align-items: center;
@@ -53,4 +71,103 @@
     border-bottom: 2px solid var(--bs-border-color);
     padding-bottom: 6px;
     margin-bottom: 8px;
+}
+
+/* Bootstrap 배지는 기본이 white-space: nowrap이라 technique 이름이 길면
+   카드 밖으로 삐져나간다. attack chain 배지는 폭에 맞춰 줄바꿈되게 한다. */
+.chain-col .badge {
+    display: block;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    text-align: left;
+    line-height: 1.3;
+}
+
+/* AI 분석 결과 카드 — 줄글 나열 대신 심각도별 강조 배너 + 표/체크리스트로 스캔하기 쉽게 구성 */
+.llm-report {
+    border-left: 4px solid var(--bs-secondary);
+    background: var(--bs-tertiary-bg);
+    border-radius: 6px;
+    padding: 14px 16px;
+}
+.llm-report.severity-low { border-left-color: #6c757d; }
+.llm-report.severity-medium { border-left-color: #ffc107; }
+.llm-report.severity-high { border-left-color: #fd7e14; }
+.llm-report.severity-critical { border-left-color: #dc3545; }
+
+.llm-report-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.llm-severity-badge {
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.llm-technique-card {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+}
+
+.llm-checklist {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+}
+.llm-checklist li {
+    position: relative;
+    padding-left: 1.1em;
+    margin-bottom: 6px;
+}
+.llm-checklist li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.5em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+.llm-checklist-neutral li::before { background: var(--bs-secondary-color); }
+.llm-checklist-action li::before { background: var(--bs-primary); }
+.llm-checklist-warn li::before { background: #ffc107; }
+
+/* YARA/ATT&CK 매핑처럼 길어질 수 있는 섹션을 접었다 펼 수 있게 하는 토글 헤더 */
+.collapse-toggle {
+    cursor: pointer;
+    user-select: none;
+}
+.collapse-toggle .collapse-chevron {
+    font-size: 0.75em;
+    transition: transform 0.2s ease;
+}
+.collapse-toggle[aria-expanded="false"] .collapse-chevron {
+    transform: rotate(-90deg);
+}
+
+/* 랜딩 페이지 (templates/landing.html) */
+.landing-hero {
+    background: radial-gradient(circle at top, rgba(79, 140, 255, 0.12), transparent 60%);
+}
+.landing-hero-wordmark {
+    font-size: 4.5rem;
+}
+.landing-hero-btn {
+    font-size: 1.25rem;
+    padding: 0.75rem 2rem;
+}
+.landing-feature-card {
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.landing-feature-card:hover {
+    border-color: #4f8cff;
+    transform: translateY(-2px);
 }

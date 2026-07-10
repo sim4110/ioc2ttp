@@ -15,10 +15,16 @@ createApp({
             attackMatrix: [],
             searchQuery: "",
             searchResults: [],
+            searchTotal: 0,
+            searchPage: 1,
+            searchPerPage: 10,
             selectedSample: { sha256_hash: "", yara_matches: [], attack_mapping: [] },
             groups: [],
             selectedGroupTag: "",
             groupChain: {},
+            llmAnalysis: null,
+            llmLoading: false,
+            llmError: "",
             _charts: {},
             _searchTimer: null,
         };
@@ -31,6 +37,9 @@ createApp({
                 groups[row.tactic].push(row);
             }
             return Object.entries(groups).map(([tactic, items]) => ({ tactic, items }));
+        },
+        searchTotalPages() {
+            return Math.max(1, Math.ceil(this.searchTotal / this.searchPerPage));
         },
     },
     watch: {
@@ -65,9 +74,18 @@ createApp({
             if (!res.ok) throw new Error(`${url} -> ${res.status}`);
             return res.json();
         },
+        async postJSON(url) {
+            const res = await fetch(url, { method: "POST" });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(body.error || `${url} -> ${res.status}`);
+            return body;
+        },
         formatDate(value) {
             if (!value) return "-";
-            return String(value).slice(0, 10);
+            // Flask jsonify는 datetime을 RFC 1123 형식("Mon, 30 Mar 2020 ...")으로 내려주므로
+            // 단순 문자열 슬라이스로는 잘린다. Date로 파싱해 YYYY-MM-DD로 통일한다.
+            const parsed = new Date(value);
+            return isNaN(parsed.getTime()) ? String(value).slice(0, 10) : parsed.toISOString().slice(0, 10);
         },
         metaFields(sample) {
             const {
@@ -169,7 +187,7 @@ createApp({
                 this.renderChart("chart-techniques", {
                     type: "bar",
                     data: {
-                        labels: techniques.map((r) => `${r.technique_id}`),
+                        labels: techniques.map((r) => [r.technique_id, `(${r.technique_name})`]),
                         datasets: [{ label: "연관 signature 수", data: techniques.map((r) => r.signature_count), backgroundColor: CHART_COLORS[3] }],
                     },
                     options: { ...baseOptions(), indexAxis: "y" },
@@ -188,24 +206,69 @@ createApp({
         },
         onSearch() {
             clearTimeout(this._searchTimer);
-            this._searchTimer = setTimeout(async () => {
-                if (!this.searchQuery.trim()) {
-                    this.searchResults = [];
-                    return;
-                }
-                try {
-                    this.searchResults = await this.fetchJSON(`/api/sample/search?q=${encodeURIComponent(this.searchQuery)}`);
-                } catch (e) {
-                    console.error(e);
-                }
-            }, 300);
+            this._searchTimer = setTimeout(() => this.runSearch(1), 300);
+        },
+        async runSearch(page) {
+            clearTimeout(this._searchTimer);
+            if (!this.searchQuery.trim()) {
+                this.searchResults = [];
+                this.searchTotal = 0;
+                this.searchPage = 1;
+                return;
+            }
+            try {
+                const data = await this.fetchJSON(
+                    `/api/sample/search?q=${encodeURIComponent(this.searchQuery)}&page=${page}&per_page=${this.searchPerPage}`
+                );
+                this.searchResults = data.results;
+                this.searchTotal = data.total;
+                this.searchPage = page;
+            } catch (e) {
+                console.error(e);
+            }
         },
         async loadSample(hash) {
             try {
                 this.selectedSample = await this.fetchJSON(`/api/sample/${hash}`);
+                this.llmAnalysis = null;
+                this.llmError = "";
             } catch (e) {
                 console.error(e);
             }
+        },
+        async runLlmAnalysis() {
+            if (!this.selectedSample.sha256_hash || this.llmLoading) return;
+            this.llmLoading = true;
+            this.llmError = "";
+            try {
+                const result = await this.postJSON(`/api/sample/${this.selectedSample.sha256_hash}/analyze`);
+                // 체크리스트 항목에 화면 전용 체크 상태를 붙인다 (API 응답 스키마에는 없는 필드).
+                (result.reversing_checklist || []).forEach((item) => { item.done = false; });
+                this.llmAnalysis = result;
+            } catch (e) {
+                this.llmError = e.message;
+            } finally {
+                this.llmLoading = false;
+            }
+        },
+        severityBadgeClass(severity) {
+            return {
+                low: "text-bg-secondary",
+                medium: "text-bg-warning",
+                high: "text-bg-danger-subtle border border-danger-subtle",
+                critical: "text-bg-danger",
+            }[severity] || "text-bg-secondary";
+        },
+        areaLabel(area) {
+            return {
+                PE_HEADER: "PE 헤더",
+                IMPORT_TABLE: "Import Table",
+                EXPORT_TABLE: "Export Table",
+                STRINGS: "문자열",
+                RESOURCES: "리소스",
+                ANTI_ANALYSIS: "안티분석/패킹",
+                NETWORK: "네트워크",
+            }[area] || area;
         },
     },
 }).mount("#app");

@@ -7,3 +7,6 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 CLAUDE.md
+venv.zip
+docs/need_modify/
+Oracle cloud 기반 데이터 파이프라인 평가 과제 공지.pdf

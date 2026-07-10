@@ -1,7 +1,7 @@
 """Flask REST API 엔드포인트 (project.pdf 5-2 서비스 페이지 구성과 매핑)."""
 from flask import Blueprint, jsonify, request
 
-from app import model
+from app import llm_service, model
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -48,12 +48,25 @@ def sample_detail(sha256_hash):
     return jsonify(result)
 
 
+@api_bp.route("/sample/<sha256_hash>/analyze", methods=["POST"])
+def sample_analyze(sha256_hash):
+    sample = model.get_sample_detail(sha256_hash)
+    if not sample:
+        return jsonify({"error": "sample not found"}), 404
+    try:
+        return jsonify(llm_service.analyze_sample(sample))
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": str(exc)}), 502
+
+
 @api_bp.route("/sample/search")
 def sample_search():
     q = request.args.get("q", default="", type=str)
+    page = max(1, request.args.get("page", default=1, type=int))
+    per_page = request.args.get("per_page", default=10, type=int)
     if not q:
-        return jsonify([])
-    return _handle(model.search_samples, q)
+        return jsonify({"total": 0, "results": []})
+    return _handle(model.search_samples, q, per_page, (page - 1) * per_page)
 
 
 @api_bp.route("/attack/mapping-rate")
