@@ -132,10 +132,10 @@ python run_pipeline.py load        # PostgreSQL 적재 (매 실행마다 전체 
 # 또는 한 번에: python run_pipeline.py all
 
 # 웹서비스 실행
-python -m app.app   # 기본 포트 5000 (FLASK_PORT로 변경 가능)
+python -m app.app   # 기본 포트 3000 (FLASK_PORT로 변경 가능)
 ```
 
-브라우저에서 http://localhost:5000 접속 (랜딩 페이지 `/`, 대시보드는 `/dashboard`).
+브라우저에서 http://localhost:3000 접속 (랜딩 페이지 `/`, 대시보드는 `/dashboard`).
 
 MITRE ATT&CK STIX 번들은 `data/raw/enterprise-attack.json`에 캐시되어, 두 번째 실행부터는
 재다운로드하지 않습니다.
